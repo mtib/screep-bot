@@ -1,7 +1,7 @@
 // builders become gatherers when there is
 // nothing else to do
 gather = require("gather");
- 
+
 // filter for red flags
 function isDismantleFlag(flag) {
     return flag.color == COLOR_RED;
@@ -44,7 +44,12 @@ function msg(creep, message) {
     creep.memory.message = message;
     console.log(creep.name + " " + message);
 }
- 
+
+// repair "broken" structures
+function repair(creep) {
+   return false;
+}
+
 // interface function
 function run(creep) {
     // look for red flags
@@ -54,6 +59,10 @@ function run(creep) {
     if (creep.ticksToLive === 0) {
         // save space
         delete creep.memory.message;
+    }
+
+    if ( repair(creep) ) {
+        return;
     }
 
     // no flags -> become a builder!
@@ -84,5 +93,6 @@ function run(creep) {
 
 module.exports = {
     run: run,
+    demand: demand,
     SPEC: [MOVE, CARRY, ATTACK, WORK]
 };

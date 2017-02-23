@@ -84,7 +84,9 @@ function run(creep) {
             advMove(creep, t, 1);
             return fillE(creep, t);
         };
-        var target = findTarget(creep, FIND_MY_SPAWNS);
+        var target = null;
+        // TODO decide to charge spawn below 300 on distance
+        //var target = findTarget(creep, FIND_MY_SPAWNS);
 
         // Priority 2:
         // - fill Extensions

@@ -16,7 +16,7 @@ function countCreeps() {
     return numCreeps;
 }
 
-// if to few creeps, use [multiple] spawns to 
+// if to few creeps, use [multiple] spawns to
 // create new ones
 // - by default builders, because others aren't
 //   needed right now
@@ -31,10 +31,10 @@ function balanceCreeps(goal) {
         // TODO balancing spawners
         for ( var i in Game.spawns ) {
             if ( schedule > 0 ) {
-                Game.spawns[i].createCreep(gather.SPEC);
+                Game.spawns[i].createCreep(gather.SPEC, "bot-" + Game.time);
                 schedule -= 1;
             }
-        } 
+        }
     }
 }
 
