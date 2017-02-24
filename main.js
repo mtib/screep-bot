@@ -1,8 +1,10 @@
 let manager = require("manager");
 let con = require("console");
+let box = require("box");
 PathFinder.use(true);
 
-const CREEPS_PER_ROOM = 4;
+const CREEPS_PER_ROOM = 5;
+const TICKPS = 16.0/60.0;
 
 // manage, so n creeps have a job
 manager.manageCreeps(CREEPS_PER_ROOM);
@@ -36,17 +38,18 @@ if (Game.time % 3 === 0) {
 }
 
 // GAME INFO: (Once a Minute)
-if (Game.time % 16 === 0) {
-    con.log(" ╔══ INFO ═══");
+if (Game.time % 2 === 0) {
+    b = new box.Box();
+    b.addHeadline("INFO");
     
     // CPU info
     let used = Math.round(Memory.cpuAvg);
     let ucpuc = threshold(used, [2.0*Game.cpu.tickLimit/3.0, Game.cpu.tickLimit], ["green", "yellow", "red"])
     let tlimc = threshold(Game.cpu.tickLimit, [100, 350], ["red", "yellow", "green"]);
     let buckc = threshold(Game.cpu.bucket, [1000, 8000], ["red", "yellow", "green"]);
-    con.raw("▒║ <b>CPU:</b> " + cspan(used, ucpuc) + "/" + Game.cpu.limit);
-    con.raw("▒║ <b>Burst:</b> " + cspan(Game.cpu.tickLimit, tlimc) + "/" + cspan(Game.cpu.bucket, buckc));
-    con.raw("▒╠══ ROOM ═══");
+    b.addLineRaw("<b>CPU:</b> " + cspan(used, ucpuc) + "/" + Game.cpu.limit);
+    b.addLineRaw("<b>Burst:</b> " + cspan(Game.cpu.tickLimit, tlimc) + "/" + cspan(Game.cpu.bucket, buckc));
+    b.addHeadline("ROOMS");
     
     // Per room info
     for ( var i in Game.rooms ) {
@@ -82,7 +85,7 @@ if (Game.time % 16 === 0) {
         }
         repl += "</span>]=" + percent + "% | ";
         repl += r.find(FIND_MY_CREEPS).length + " / " + CREEPS_PER_ROOM + " Creeps"
-        con.raw("▒║ " + repl);
+        b.addLineRaw(repl);
         r.find(FIND_MY_CREEPS).forEach(function(c, i, a) {
             let cinfo = [];
             for (let t in c.carry) {
@@ -93,13 +96,20 @@ if (Game.time % 16 === 0) {
                 ctxt = " (" + cinfo.join(", ") + ")";
             }
             if ( i < a.length -1) {
-                con.raw("▒║  ├── " + c.name + ctxt);
+                b.addLineRaw(" ├── " + c.name + ctxt);
             } else {
-                con.raw("▒║  └── " + c.name + ctxt);
+                b.addLineRaw(" └── " + c.name + ctxt);
             }
         })
-        con.log("▒╚═══════════");
-        con.log("▒▒▒▒▒▒▒▒▒▒▒▒")
+        
+        //debug
+        b2 = new box.Box();
+        b2.addHeadline("WOW");
+        b2.addLine("This is getting");
+        b2.addLine("reaaaallllyy stupid");
+        b.addBox(b2);
+        //end
+        b.print();
         con.font("hasklig, Fira Code, monospace");
     }
 }
