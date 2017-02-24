@@ -63,13 +63,16 @@ function Box() {
         let lines = this.lines.slice(0);
         let outarr = [];
         let iw = this.innerWidth;
+        let invert = function(s) {
+            return "<b style='color:black;background-color:lightgrey;'> " + s +" </b>";
+        }
         
         let first = lines.shift();
-        outarr.push(CORNERS[0] + n(SIDES[0], 3) + " " + first.raw + " " + n(SIDES[0], iw - 3 - first.length) + CORNERS[1]);
+        outarr.push(CORNERS[0] + n(SIDES[0], 3) + "╡" + invert(first.raw) + "╞" + n(SIDES[0], iw - 5 - first.length) + CORNERS[1]);
         
         lines.forEach(function(line) {
             if (line.type == HEADER) {
-                outarr.push(SIDES[2] + n(SIDES[0], 3) + " " + line.raw + " " + n(SIDES[0], iw - 3 - line.length) + SIDES[3] + SHADOW);
+                outarr.push(SIDES[2] + n(SIDES[0], 3) + "╡" + invert(line.raw) + "╞" + n(SIDES[0], iw - 5 - line.length) + SIDES[3] + SHADOW);
             } else if (line.type == LINE) {
                 outarr.push(SIDES[1] + " " + line.raw + n(" ", iw - line.length + 1) + SIDES[1] + SHADOW);
             }

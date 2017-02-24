@@ -23,7 +23,7 @@ function advMove(creep, target, r) {
                 pos: tpos,
                 range: r,
             }, {
-                plainCost: 1,
+                plainCost: 2,
                 swampCost: 3,
                 heuristicWeight: 1.2,
                 roomCallback: function(roomName) {
