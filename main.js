@@ -37,15 +37,16 @@ if (Game.time % 3 === 0) {
 
 // GAME INFO: (Once a Minute)
 if (Game.time % 16 === 0) {
-    con.log("### INFO ###");
+    con.log(" ╔══ INFO ═══");
     
     // CPU info
     let used = Math.round(Memory.cpuAvg);
     let ucpuc = threshold(used, [2.0*Game.cpu.tickLimit/3.0, Game.cpu.tickLimit], ["green", "yellow", "red"])
     let tlimc = threshold(Game.cpu.tickLimit, [100, 350], ["red", "yellow", "green"]);
     let buckc = threshold(Game.cpu.bucket, [1000, 8000], ["red", "yellow", "green"]);
-    con.raw("# <b>CPU:</b> " + cspan(used, ucpuc) + "/" + Game.cpu.limit);
-    con.raw("# <b>Burst:</b> " + cspan(Game.cpu.tickLimit, tlimc) + "/" + cspan(Game.cpu.bucket, buckc));
+    con.raw("▒║ <b>CPU:</b> " + cspan(used, ucpuc) + "/" + Game.cpu.limit);
+    con.raw("▒║ <b>Burst:</b> " + cspan(Game.cpu.tickLimit, tlimc) + "/" + cspan(Game.cpu.bucket, buckc));
+    con.raw("▒╠══ ROOM ═══");
     
     // Per room info
     for ( var i in Game.rooms ) {
@@ -81,15 +82,24 @@ if (Game.time % 16 === 0) {
         }
         repl += "</span>]=" + percent + "% | ";
         repl += r.find(FIND_MY_CREEPS).length + " / " + CREEPS_PER_ROOM + " Creeps"
-        con.raw("# " + repl);
-        r.find(FIND_MY_CREEPS).forEach(function(c) {
+        con.raw("▒║ " + repl);
+        r.find(FIND_MY_CREEPS).forEach(function(c, i, a) {
             let cinfo = [];
             for (let t in c.carry) {
-                cinfo.push(c.carry[t] + " " + t);
+                if (c.carry[t] != 0) cinfo.push(c.carry[t] + " " + t);
             }
-            con.raw("# -> " + c.name + " (" + cinfo.join(", ") + ")");
+            let ctxt = "";
+            if ( cinfo.length > 0 ) {
+                ctxt = " (" + cinfo.join(", ") + ")";
+            }
+            if ( i < a.length -1) {
+                con.raw("▒║  ├── " + c.name + ctxt);
+            } else {
+                con.raw("▒║  └── " + c.name + ctxt);
+            }
         })
-        con.log("### #### ###");
+        con.log("▒╚═══════════");
+        con.log("▒▒▒▒▒▒▒▒▒▒▒▒")
         con.font("hasklig, Fira Code, monospace");
     }
 }

@@ -14,7 +14,7 @@ function countCreeps() {
         answ[Game.rooms[j].name] = Game.rooms[j].find(FIND_MY_CREEPS).length;
         Game.rooms[j].find(FIND_MY_SPAWNS).forEach(function(s) {
             if (s.spawning !== null) {
-                answ[s.room] += 1;
+                answ[s.room.name] += 1;
             }
         });
     }
