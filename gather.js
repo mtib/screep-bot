@@ -1,5 +1,7 @@
 _ = require("lodash");
 
+let COST = {};
+
 // used for paths
 LINE_STYLE = {
     color: "#AAAAAA",
@@ -10,16 +12,36 @@ LINE_STYLE = {
 
 // cpu-heavy moveTo(range) alternative
 function advMove(creep, target, r) {
-    if ( target === null ) {
+    if ( target === null || creep.spawning ) {
         return;
     }
-    if ( !creep.pos.inRangeTo(target.pos, r) ) {
-        path = creep.pos.findPathTo(target);
-        if ( path.length > r) {
-            creep.room.visual.line(creep.pos, path[0], LINE_STYLE);
-            creep.room.visual.line(path[0], target.pos, LINE_STYLE);
-            creep.move(path[0].direction);
+    let cpos = creep.pos;
+    let tpos = target.pos;
+    if ( !cpos.inRangeTo(tpos, r) ) {
+        let path = PathFinder.search(
+            cpos, {
+                pos: tpos,
+                range: r,
+            }, {
+                plainCost: 1,
+                swampCost: 3,
+                heuristicWeight: 1.2,
+                roomCallback: function(roomName) {
+                    var cur = Game.rooms[roomName];
+                    if(!cur) return;
+                    return COST[roomName];
+                }
+            }).path;
+        for ( let i = 1; i < path.length; i++ ) {
+            creep.room.visual.line(path[i-1], path[i], LINE_STYLE);
         }
+        let next = path[0];
+        let last = path[path.length - 1];
+        COST[creep.room.name].set(cpos.x, cpos.y, 0x00);
+        COST[creep.room.name].set(next.x, next.y, 0xff);
+        COST[creep.room.name].set(last.x, last.y, 0xff);
+        COST[creep.room.name].set(next.x, next.y, 0xff);
+        creep.move(cpos.getDirectionTo(next));
     }
 }
 
@@ -62,7 +84,7 @@ function findTargetStruct(creep, typ) {
 // tries to empty the creeps charge, in case something is
 // left, carry on charging other things
 function fillE(creep, target) {
-    var r = creep.transfer(target, RESOURCE_ENERGY, Math.min(creep.carry[RESOURCE_ENERGY], target.energyCapacity - target.energy));
+    let r = creep.transfer(target, RESOURCE_ENERGY, Math.min(creep.carry[RESOURCE_ENERGY], target.energyCapacity - target.energy));
     if ( creep.carry.energy === 0 ) {
         return ERR_NOT_ENOUGH_ENERGY;
     }
@@ -80,13 +102,12 @@ function run(creep) {
     if ( creep.memory.full ) {
         // Priority 1:
         // - fill Spawn
-        var task = function(t) {
+        let task = function(t) {
             advMove(creep, t, 1);
             return fillE(creep, t);
         };
-        var target = null;
         // TODO decide to charge spawn below 300 on distance
-        //var target = findTarget(creep, FIND_MY_SPAWNS);
+        let target = findTarget(creep, FIND_MY_SPAWNS);
 
         // Priority 2:
         // - fill Extensions
@@ -103,17 +124,31 @@ function run(creep) {
             };
             target = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES);
         }
-
+        
         // Priority 4:
+        // - repair Structures
+        if ( target === null ) {
+            task = function(t) {
+                advMove(creep, t, 3);
+                return creep.repair(t);
+            }
+            target = creep.pos.findClosestByPath(FIND_STRUCTURES,
+                { filter: function(s) {
+                    return s.hits < Math.min(5000, s.hitsMax);
+                }});
+        }
+
+        // Priority 5:
         // - upgrade Controller
         //   there has to be one in the room
         //   and it has to be accessible afaik
-        if ( target === null ) {
+        let con = creep.room.controller;
+        if ( target === null || con.ticksToDowngrade < 1000 || con.level < 2) {
             task = function(t) {
                 advMove(creep, t, 3);
                 return creep.upgradeController(t);
             };
-            target = creep.room.controller;
+            target = con;
         }
 
         // If empty, work!
@@ -121,7 +156,8 @@ function run(creep) {
     } else {
         // locate resource
         // - could technically be depleted
-        var resource = creep.pos.findClosestByPath(FIND_SOURCES);
+        let resource = creep.pos.findClosestByPath(FIND_SOURCES);
+        // TODO withDraw energy and work as if full
 
         // move adjacent to it and mine
         advMove(creep, resource, 1);
@@ -130,7 +166,35 @@ function run(creep) {
     }
 }
 
+function renewCostMatrix() {
+    for ( let i in Game.rooms ) {
+        let cur = Game.rooms[i];
+        let costs = new PathFinder.CostMatrix;
+        cur.find(FIND_STRUCTURES).forEach(function(structure) {
+            if (structure.structureType === STRUCTURE_ROAD) {
+                // Favor roads over plain tiles
+                costs.set(structure.pos.x, structure.pos.y, 1);
+            } else if (structure.structureType !== STRUCTURE_CONTAINER && 
+                    (structure.structureType !== STRUCTURE_RAMPART ||
+                    !structure.my)) {
+                // Can't walk through non-walkable buildings
+                costs.set(structure.pos.x, structure.pos.y, 0xff);
+            }
+        });
+            
+        // Avoid creeps in the room
+        cur.find(FIND_CREEPS).forEach(function(creep) {
+            costs.set(creep.pos.x, creep.pos.y, 0xff);
+        });
+        
+        COST[cur.name] = costs;
+    }
+}
+
 module.exports = {
     run: run,
-    SPEC: [WORK, WORK, MOVE, MOVE, CARRY]
+    SPEC: [WORK, MOVE, MOVE, CARRY, CARRY],
+    MINIMAL: [WORK, MOVE, CARRY],
+    COST: COST,
+    renewCostMatrix: renewCostMatrix
 };
