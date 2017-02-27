@@ -1,6 +1,6 @@
 // builders become gatherers when there is
 // nothing else to do
-gather = require("gather");
+let gather = require("gather");
 
 // filter for red flags
 function isDismantleFlag(flag) {

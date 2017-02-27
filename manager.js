@@ -1,22 +1,23 @@
-// lodash for summing carry weights
-var _ = require("lodash");
-
 // gather bots collect energy and power stuff
-var gather = require("gather");
+let gather = require("gather");
 // builder destroy red-flagged objects
 // - and are gatherers when not needed
-var builder = require("builder");
+let builder = require("builder");
+let box = require("box");
 
 // because Game.creeps.length isn't a thing
 function countCreeps() {
-    var answ = {};
-    for ( var j in Game.rooms ) {
-        answ[Game.rooms[j].name] = Game.rooms[j].find(FIND_MY_CREEPS).length;
-        Game.rooms[j].find(FIND_MY_SPAWNS).forEach(function(s) {
+    let answ = {};
+    let isSpawning = (s) => {
+        if(s) {
             if (s.spawning !== null) {
                 answ[s.room.name] += 1;
             }
-        });
+        }
+    };
+    for ( let j in Game.rooms ) {
+        answ[Game.rooms[j].name] = Game.rooms[j].find(FIND_MY_CREEPS).length;
+        Game.rooms[j].find(FIND_MY_SPAWNS).forEach(isSpawning);
     }
     return answ;
 }
@@ -26,9 +27,9 @@ function countCreeps() {
 // - by default builders, because others aren't
 //   needed right now
 function balanceCreeps(goal) {
-    var counts = countCreeps();
-    for ( var i in Game.spawns ) {
-        var spawner = Game.spawns[i];
+    let counts = countCreeps();
+    for ( let i in Game.spawns ) {
+        let spawner = Game.spawns[i];
         if ( counts[spawner.room.name] < goal ) {
             if (spawn(spawner, gather) == OK) {
                 counts[spawner.room.name] += 1;
@@ -41,36 +42,47 @@ function spawn(spawn, modul) {
     let msimple = getGenSpec(modul);
     let ret = spawn.createCreep(msimple.SPEC, msimple.NNAME, msimple.MEMORY);
     if (ret == msimple.NNAME) ret = OK;
+    let response = "-- you should not be reading this --";
+    let code = "OK";
     switch (ret) {
         case OK:
-            console.log("Spawning creep " + msimple.NNAME + " in Rooom " + spawn.room.name);
+            response = "Spawning creep " + msimple.NNAME + " in Room " + spawn.room.name;
             break;
         case ERR_NOT_ENOUGH_ENERGY:
             ret = spawn.createCreep(msimple.MINIMAL, msimple.MNAME, msimple.MEMORY);
             if (ret == msimple.MNAME) {
                 ret = OK;
-                console.log("Spawning creep " + msimple.MNAME + " in Rooom " + spawn.room.name);
+                response = "Spawning creep " + msimple.MNAME + " in Room " + spawn.room.name;
+            } else {
+                response = spawn.name + " in Room " + spawn.room.name + " can't spawn creep";
+                code = "NOT ENOUGH ENERGY";
             }
             break;
         default:
-            console.log("Spawning creep " + msimple.NNAME + " in Room " + spawn.room.name + " with code " + ret);
+            response = "Spawning creep " + msimple.NNAME + " in Room " + spawn.room.name;
+            code = "BUSY / NOT MINE";
             break;
     }
+    let b = new box.Box();
+    b.addHeadline("SPAWN");
+    b.addLineRaw(response);
+    b.addLineRaw("<b>Code:</b> " + code);
+    b.print();
     return ret;
 }
 
 // get tuple of specific type
 // - ([SPEC, MINIMAL], [NAME1, NAME2], MEMORY)
 function getGenSpec(modul) {
-    var spec = gather.SPEC;
+    let spec = gather.SPEC;
     if ( modul.hasOwnProperty("SPEC") ) {
         spec = modul.SPEC;
     }
-    var mini = spec;
+    let mini = spec;
     if ( modul.hasOwnProperty("MINIMAL") ) {
         mini = modul.MINIMAL;
     }
-    var mem = {};
+    let mem = {};
     if ( modul.hasOwnProperty("MEMORY") ) {
         mem = modul.MEMORY;
     }
@@ -85,8 +97,8 @@ function getGenSpec(modul) {
 
 // generate a name based on current time and spec
 function getName(spec) {
-    s = "";
-    for ( var i in spec ) {
+    let s = "";
+    for ( let i in spec ) {
         let j = spec[i][0].toUpperCase();
         let c = "<span style='color:";
         switch (j) {
@@ -120,7 +132,7 @@ function getName(spec) {
 // check whether or not a creep has all
 // necessary bits to be of a specific type
 function isSpec(creep, spec) {
-    return creep.body.every(function(c) {
+    return creep.body.every((c)=>{
         return spec.indexOf(c.type) != -1;
     });
 }
@@ -128,9 +140,10 @@ function isSpec(creep, spec) {
 // main function
 function manageCreeps(goal) {
     gather.renewCostMatrix();
-    every( function() {balanceCreeps(goal);}, 11 );
-    for (var c in Game.creeps) {
-        creep = Game.creeps[c];
+    every( () => {balanceCreeps(goal);}, 11 );
+    for (let c in Game.creeps) {
+        let creep = Game.creeps[c];
+        let start = Game.cpu.getUsed();
         if ( isSpec(creep, gather.SPEC) ) {
             gather.run(creep);
         } else if ( isSpec(creep, builder.SPEC) ) {
@@ -138,6 +151,7 @@ function manageCreeps(goal) {
         } else {
             console.log(creep + " doesn't know what to do");
         }
+        creep.memory.used = Game.cpu.getUsed() - start;
     }
 }
 
@@ -145,9 +159,11 @@ function manageCreeps(goal) {
 function every(func, ticks) {
     if (Game.time % ticks === 0) {
         func();
-    }   
+    }
 }
 
 module.exports = {
-    manageCreeps: manageCreeps
+    manageCreeps: manageCreeps,
+    spawn: spawn,
+    gather: gather,
 };

@@ -1,113 +1,76 @@
 let manager = require("manager");
-let con = require("console");
-let box = require("box");
+let mem = require("memory");
 PathFinder.use(true);
 
-const CREEPS_PER_ROOM = 4;
-const TICKPS = 16.0/60.0;
+const CREEPS_PER_ROOM = 7;
+const TPM = 16;
 
-// manage, so n creeps have a job
+mem.init();
+mem.deserialize();
 manager.manageCreeps(CREEPS_PER_ROOM);
-
-function threshold(val, arr, cols) {
-    let ret = cols.length-1;
-    arr.push(-1337);
-    arr.every(function(thr, i) {
-        ret = i;
-        return val > thr;
-    });
-    return cols[ret];
-}
-
-function cspan(s, c) {
-    return "<span style='color:" + c + ";'>" + s + "</span>";
-}
-
-if (!Memory["cpuArr"]) {
-    Memory.cpuArr = [0,0,0,0,0,0,0,0,0,0];
-}
-
-if (Game.time % 3 === 0) {
-    let sum = 0;
-    Memory.cpuArr.shift();
-    Memory.cpuArr.push(Game.cpu.getUsed());
-    Memory.cpuArr.forEach(function(c) {
-        sum += c;
-    })
-    Memory.cpuAvg = sum / Memory.cpuArr.length
-}
+mem.stats();
 
 // GAME INFO: (Once a Minute)
-if (Game.time % 16 === 0) {
-    b = new box.Box();
-    b.addHeadline(" CPU ");
-    
-    // CPU info
-    let used = Math.round(Memory.cpuAvg);
-    let ucpuc = threshold(used, [2.0*Game.cpu.tickLimit/3.0, Game.cpu.tickLimit], ["green", "yellow", "red"])
-    let tlimc = threshold(Game.cpu.tickLimit, [100, 350], ["red", "yellow", "green"]);
-    let buckc = threshold(Game.cpu.bucket, [1000, 8000], ["red", "yellow", "green"]);
-    b.addLineRaw("<b>Ticks:</b> " + cspan(used, ucpuc) + "/" + Game.cpu.limit + " (avg)");
-    b.addLineRaw("<b>Burst:</b> " + cspan(Game.cpu.tickLimit, tlimc) + "/" + cspan(Game.cpu.bucket, buckc));
-    b.addHeadline("ROOMS");
-    
-    // Per room info
-    for ( var i in Game.rooms ) {
-        var r = Game.rooms[i];
-        var cur = r.energyAvailable;
-        var max = r.energyCapacityAvailable;
-        var perdec = Math.round(cur/max * 10);
-        var percent = Math.round(cur/max*100);
-        for ( var j = 0; j < 2-Math.floor(Math.log10(percent)); j++ ) {
-            percent = " " + percent;
-        }
-
-        var repl = "<b>Room(" + r.name + "):</b> [";
-        let col = "#FF00FF";
-        switch (true) {
-            case perdec < 3:
-                col = "red";
-                break;
-            case perdec > 7:
-                col = "green";
-                break;
-            default:
-                col = "yellow";
-                break
-        }
-        repl += "<b style='color:" + col + ";'>";
-        for ( var j = perdec; j > 0; j-- ) {
-            repl += "#";
-        }
-        repl += "</b><span style='color:grey'>";
-        for ( var j = perdec; j < 10; j++ ) {
-            repl += "-";
-        }
-        repl += "</span>]=" + percent + "% | ";
-        repl += r.find(FIND_MY_CREEPS).length + " / " + CREEPS_PER_ROOM + " Creeps"
-        b.addLineRaw(repl);
-        r.find(FIND_MY_CREEPS).forEach(function(c, i, a) {
-            let cinfo = [];
-            for (let t in c.carry) {
-                if (c.carry[t] != 0) cinfo.push(c.carry[t] + " " + t);
-            }
-            let ctxt = "";
-            if ( cinfo.length > 0 ) {
-                ctxt = " (" + cinfo.join(", ") + ")";
-            }
-            let ttl = "" + Math.floor(1/TICKPS * c.ticksToLive / 60.0);
-            for ( let k = 0; k < 4-ttl.length; k++ ) {
-                ttl = " " + ttl;
-            }
-            ctxt = "<i style='color:grey;'> " + ttl + "m</i>" + ctxt;
-            if ( i < a.length -1) {
-                b.addLineRaw(" ├── " + c.name + ctxt);
-            } else {
-                b.addLineRaw(" └── " + c.name + ctxt);
-            }
-        })
-        
-        b.print();
-        con.font("hasklig, Fira Code, monospace");
-    }
+if (Game.time % TPM === 1) {
+    let info = require("info");
+    mem.clean(TPM);
+    info.info();
+} else if (RawMemory.segments[0]) {
+    let box = require("box");
+    box.fromJSON(RawMemory.segments[0]).showInAllRooms();
 }
+
+function drawPie(visual, val, max, title, color, num) {
+    let p = val / max;
+    let r = 1; // radius
+    let center = {x: 1.9, y: 2 + num * r * 4.5};
+    visual.circle(center, {
+        radius: r + 0.1,
+        fill: 'rgba(0,0,0,1)',
+        stroke: 'rgba(255,255,255,0.8)'
+    });
+    let poly = [center];
+    let surf = 2 * Math.PI * p;
+    let offs = -Math.PI / 2;
+    for ( let i = offs; i <= surf + offs; i += Math.PI / 64) {
+        poly.push({
+            x: center.x + Math.cos(i),
+            y: center.y + Math.sin(i)
+        });
+    }
+    poly.push(center);
+    visual.poly(poly, {
+        fill: color,
+        opacity: 1,
+        stroke: color,
+        strokeWidth: 0.05
+    });
+    let yoff = 0.7;
+    if ( 0.35 < p && p < 0.65 ) yoff += 0.3;
+    visual.text(title, center.x, center.y + r + yoff, {
+        color: 'white',
+        font: '0.6 monospace',
+        align: 'center'
+    });
+    let lastpol = poly[poly.length-2];
+    visual.text(""+Math.round(p*100)+"%", lastpol.x + (lastpol.x - center.x)*0.7, lastpol.y + (lastpol.y - center.y)*0.4, {
+        color: 'white',
+        font: '0.4 monospace',
+        align: 'center'
+    });
+}
+
+for (let rn in Game.rooms) {
+    let room = Game.rooms[rn];
+    let val = room.energyAvailable;
+    let max = room.energyCapacityAvailable;
+    drawPie(room.visual, val, max, "Energy", "#FFDF2E", 0);
+    drawPie(room.visual, room.find(FIND_MY_CREEPS).length, CREEPS_PER_ROOM, "Creeps", "#25DA13", 1);
+}
+
+drawPie(new RoomVisual(), Game.cpu.bucket, 10000, "Bucket", "#197DF0", 2);
+drawPie(new RoomVisual(), Game.cpu.tickLimit, 500, "Burst", "#FB161B", 3);
+
+
+
+

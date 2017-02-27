@@ -7,25 +7,65 @@ function escapeHtml(unsafe) {
          .replace(/>/g, "&gt;")
          .replace(/"/g, "&quot;")
          .replace(/'/g, "&#039;");
- }
+}
 
+function reduceHtml(s) {
+    return s
+        .replace(/<script.*?>.*?<\/script>/gi, "")
+        .replace(/<.*?>/gi, "");
+}
 
+function ntimes(s, m) {
+    let r = "";
+    for (let i = 0; i < m; i++) {
+        r += s;
+    }
+    return r;
+}
+
+function padl(s, c, l) {
+    let len = reduceHtml("" + s).length;
+    for ( let i = 0; i < l-len; i++ ) {
+        s = c + s;
+    }
+    return s;
+}
+
+function padr(s, c, l) {
+    let len = reduceHtml("" + s).length;
+    for ( let i = 0; i < l-len; i++ ) {
+        s = s + c;
+    }
+    return s;
+}
+
+function famend(f) {
+    return "<style>*{font-family:" + f + ";}</style>";
+}
 
 module.exports = {
-    log: function(s) {
+    log: (s) => {
         console.log("<span style='font-family:hasklig;'>" + escapeHtml(s) + "</span>");
     },
-    raw: function(s) {
+    raw: (s) => {
         console.log("<span style='font-family:hasklig;'>" + s + "</span>");
     },
-    font: function(f) {
-        console.log(this.famend(f));
+    font: (f) => {
+        console.log(famend(f));
     },
-    famend: function(f) {
-        return "<style>*{font-family:" + f + ";}</style>";
-    },
-    logObj: function(obj) {
+    famend: famend,
+    logObj: (obj) => {
         console.log(JSON.stringify(obj));
     },
-    escape: escapeHtml
+    bold: (s) => {
+        return "<b>" + s + "</b>";
+    },
+    color: (s, c) => {
+        return "<span style='color:" + c + ";'>" + s + "</span>";
+    },
+    reduce: reduceHtml,
+    n: ntimes,
+    escape: escapeHtml,
+    padl: padl,
+    padr: padr
 };
