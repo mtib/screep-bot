@@ -106,18 +106,10 @@ function info() {
             b.addBox(b2);
         }
     } // end ROOMS
+    b.compile();
     b.print();
+    RawMemory.segments[0] = b.toReducedArray().join('\n');
     b.showInAllRooms();
-    RawMemory.segments[0] = JSON.stringify({
-        innerWidth: b.innerWidth,
-        lines: b.lines.map((l) => {
-            return {
-                type: l.type,
-                raw: l.reduced,
-                length: l.length
-            };
-        })
-    });
 }
 
 module.exports = {

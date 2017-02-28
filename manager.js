@@ -138,7 +138,7 @@ function isSpec(creep, spec) {
 }
 
 // main function
-function manageCreeps(goal) {
+function manageCreeps(goal, profiler) {
     gather.renewCostMatrix();
     every( () => {balanceCreeps(goal);}, 11 );
     for (let c in Game.creeps) {
@@ -147,7 +147,7 @@ function manageCreeps(goal) {
         if ( isSpec(creep, gather.SPEC) ) {
             gather.run(creep);
         } else if ( isSpec(creep, builder.SPEC) ) {
-            builder.run(creep);
+            if (!builder.run(creep)) gather.run(creep);
         } else {
             console.log(creep + " doesn't know what to do");
         }

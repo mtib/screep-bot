@@ -7,6 +7,17 @@ function init() {
         Memory.loaded = [0];
     }
     RawMemory.setActiveSegments(Memory.loaded);
+    if (Memory.CREEPS_STATIC === 0) {
+        if (Game.cpu.bucket == 10000) {
+            Memory.CREEPS_PER_ROOM += 1;
+            Memory.CREEPS_STATIC = 1000;
+        } else if (Game.cpu.bucket < 7000) {
+            Memory.CREEPS_PER_ROOM -= 1;
+            Memory.CREEPS_STATIC = 2000;
+        }
+    } else if (Memory.CREEPS_STATIC > 0) {
+        Memory.CREEPS_STATIC -= 1;
+    }
 }
 
 function cleanMemory(ticks) {

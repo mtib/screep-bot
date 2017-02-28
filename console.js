@@ -31,6 +31,26 @@ function padl(s, c, l) {
     return s;
 }
 
+function sho(num) {
+    let n  = parseInt(num);
+    if (n === null || n.isNaN) {
+        return num;
+    }
+    n = n.toString();
+    let ld = Math.log10(num)/3;
+    switch (true) {
+        case ld < 1:
+            return n;
+        case ld < 2:
+            return n.substring(0, n.length-3) + "k";
+        case ld < 3:
+            return n.substring(0, n.length-6) + "M";
+        case ld < 4:
+            return n.substring(0, n.length-9) + "G";
+    }
+    return num;
+}
+
 function padr(s, c, l) {
     let len = reduceHtml("" + s).length;
     for ( let i = 0; i < l-len; i++ ) {
@@ -44,8 +64,8 @@ function famend(f) {
 }
 
 module.exports = {
-    log: (s) => {
-        console.log("<span style='font-family:hasklig;'>" + escapeHtml(s) + "</span>");
+    log: (s, color="inherit") => {
+        console.log("<span style='font-family:hasklig;color:"+color+";'>" + escapeHtml(s) + "</span>");
     },
     raw: (s) => {
         console.log("<span style='font-family:hasklig;'>" + s + "</span>");
@@ -67,5 +87,6 @@ module.exports = {
     n: ntimes,
     escape: escapeHtml,
     padl: padl,
-    padr: padr
+    padr: padr,
+    sho: sho
 };

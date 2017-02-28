@@ -1,7 +1,3 @@
-// builders become gatherers when there is
-// nothing else to do
-let gather = require("gather");
-
 // filter for red flags
 function isDismantleFlag(flag) {
     return flag.color == COLOR_RED;
@@ -51,6 +47,7 @@ function repair(creep) {
 }
 
 // interface function
+// returns whether or not creep has a job
 function run(creep) {
     // look for red flags
     target = creep.pos.findClosestByPath(FIND_FLAGS, isDismantleFlag);
@@ -62,13 +59,12 @@ function run(creep) {
     }
 
     if ( repair(creep) ) {
-        return;
+        return true;
     }
 
     // no flags -> become a builder!
     if (target === null) {
-        gather.run(creep);
-        return;
+        return false;
     }
 
     // get objects at the red flag
@@ -89,6 +85,7 @@ function run(creep) {
         msg(creep, "will remove the flag: " + target.name);
         target.remove();
     }
+    return true;
 }
 
 module.exports = {

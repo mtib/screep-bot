@@ -157,6 +157,10 @@ function block(target, duration) {
             return c.memory.hasOwnProperty("full") && c.memory.full;
         }
     });
+    if (!closest) {
+        // TODO what does this mean
+        return;
+    }
     CREEPS.forEach(function(c) {
         if (c != closest.id) {
             if (!Memory.blocked[c]) {
@@ -217,7 +221,7 @@ function run(creep) {
         if ( target === null ) {
             task = function(t) {
                 advMove(creep, t, 3);
-                block(t, 100);
+                block(t, 17);
                 return creep.repair(t);
             };
             target = creep.pos.findClosestByPath(FIND_STRUCTURES,
@@ -231,7 +235,7 @@ function run(creep) {
         if ( target === null ) {
             task = function(t) {
                 advMove(creep, t, 3);
-                block(t, 60);
+                block(t, 16);
                 return creep.build(t);
             };
             target = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, blockFilter(creep));
@@ -317,7 +321,7 @@ function renewCostMatrix() {
 
 module.exports = {
     run: run,
-    SPEC: [WORK, MOVE, CARRY, CARRY],
+    SPEC: [WORK, WORK, MOVE, MOVE, CARRY, CARRY],
     MINIMAL: [WORK, MOVE, CARRY],
     COST: COST,
     renewCostMatrix: renewCostMatrix
